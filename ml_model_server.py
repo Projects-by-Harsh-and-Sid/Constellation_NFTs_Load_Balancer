@@ -1,7 +1,7 @@
 from flask import Flask, request, render_template
 import requests
 from embeddings import get_embeddings
-from llama_index.core import SimpleDirectoryReader
+from llama_index.core import SimpleDirectoryReader,Document
 import json
 
 app = Flask(__name__)
@@ -18,17 +18,27 @@ def index():
         result = make_request(query)
     return render_template('input.html', result=result)
 
+def document_to_dict(doc):
+    if isinstance(doc, Document):
+        return {
+            'id': doc.doc_id,  # Use doc_id instead of id_
+            'text': doc.text,
+            # You can include other attributes here as neede
+        }
+    return doc  # Return as-is if it's not a Document object
+
 def make_request(query):
-    target_url = 'http://localhost:8080/query'
+    target_url = 'http://localhost:8000/query'
     
     # Convert NumPy array to list for JSON serialization
-    embeddings_list = embeddings.tolist()
+    embeddings_list = embeddings
     
     # Prepare the data to be sent
+    documents_list = [document_to_dict(doc) for doc in documents]
     data = {
         'query': query,
         'embeddings': embeddings_list,
-        'documents': documents
+        'document': documents_list
     }
     
     try:
@@ -37,16 +47,16 @@ def make_request(query):
 
         response.raise_for_status()  # Raises an HTTPError for bad responses
         
+        response_data = response.json()
         return {
-            'status': 'success',
-            'sent_query': query,
-            'response_data': response.json(),
-            'status_code': response.status_code
+            'query': query,
+            'answer': response_data.get('answer', 'No answer provided')
         }
     except requests.RequestException as e:
+        print(f"Error occurred: {str(e)}")
         return {
-            'status': 'error',
-            'message': str(e)
+            'query': query,
+            'answer': f"An error occurred: {str(e)}"
         }
 
 if __name__ == '__main__':
