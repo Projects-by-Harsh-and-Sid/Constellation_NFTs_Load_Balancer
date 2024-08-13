@@ -7,4 +7,5 @@ def hello():
     return "https://127.0.0.1:5000"
 
 if __name__ == '__main__':
-    app.run(port=5996,debug=True,host='0.0.0.0')
+    # app.run(port=5996,debug=True,host='0.0.0.0')
+    app.run(host='::',port=5996,debug=True,ssl_context=('certificate.crt','private.key'))
