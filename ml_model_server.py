@@ -1,6 +1,7 @@
 from flask import Flask, request, render_template
 import requests
 from embeddings import get_embeddings
+from embeddings import get_documents
 from llama_index.core import SimpleDirectoryReader,Document
 import json
 
@@ -8,7 +9,8 @@ app = Flask(__name__)
 
 # Load pre-generated embeddings and documents
 embeddings = get_embeddings()
-documents = SimpleDirectoryReader('./documents').load_data()
+# documents = SimpleDirectoryReader('./documents').load_data()
+documents_list = get_documents('./documents')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -18,14 +20,14 @@ def index():
         result = make_request(query)
     return render_template('input.html', result=result)
 
-def document_to_dict(doc):
-    if isinstance(doc, Document):
-        return {
-            'id': doc.doc_id,  # Use doc_id instead of id_
-            'text': doc.text,
-            # You can include other attributes here as neede
-        }
-    return doc  # Return as-is if it's not a Document object
+# def document_to_dict(doc):
+#     if isinstance(doc, Document):
+#         return {
+#             'id': doc.doc_id,  # Use doc_id instead of id_
+#             'text': doc.text,
+#             # You can include other attributes here as neede
+#         }
+#     return doc  # Return as-is if it's not a Document object
 
 def make_request(query):
     target_url = 'http://localhost:8000/query'
@@ -34,7 +36,7 @@ def make_request(query):
     embeddings_list = embeddings
     
     # Prepare the data to be sent
-    documents_list = [document_to_dict(doc) for doc in documents]
+    # documents_list = [document_to_dict(doc) for doc in documents]
     data = {
         'query': query,
         'embeddings': embeddings_list,
