@@ -9,6 +9,9 @@ import requests
 import jwt
 import datetime
 from functools import wraps
+from random import randint
+import datetime
+import secrets
 
 
 
@@ -18,12 +21,48 @@ CORS(app)
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'doc', 'docx'}
 
-SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'chatwithme')
+SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'chatwithme') # do random key generation
 CHAT_URL = os.environ.get('CHAT_URL', 'http://localhost:8000/query')
+MASTER_API_KEY = os.environ.get('MASTER_API_KEY', '1234567890')
 chat_sessions = {}
+temp_api_keys = {}
+
+
+
+def generate_temp_api_key(model, embeddings, document):
+    temp_key = secrets.token_urlsafe(32)
+    expiration = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+    temp_api_keys[temp_key] = {
+        'expiration': expiration,
+        'model': model,
+        'embeddings': embeddings,
+        'document': document
+    }
+    return temp_key
+
+def clean_expired_api_keys():
+    now = datetime.datetime.utcnow()
+    expired_keys = [key for key, data in temp_api_keys.items() if data['expiration'] < now]
+    for key in expired_keys:
+        del temp_api_keys[key]
+        
+def api_key_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        api_key = request.headers.get('X-API-Key')
+        if not api_key:
+            return jsonify({'message': 'Missing API key'}), 401
+        
+        clean_expired_api_keys()
+        
+        if api_key == MASTER_API_KEY or api_key in temp_api_keys:
+            return f(*args, **kwargs)
+        else:
+            return jsonify({'message': 'Invalid API key'}), 401
+    return decorated
 
 def generate_jwt_token(model, embeddings, document):
-    session_id = str(len(chat_sessions) + 1)
+    session_id = str(randint(1000000000, 99999999999))
     chat_sessions[session_id] = {
         'model': model,
         'embeddings': embeddings,
@@ -35,14 +74,17 @@ def generate_jwt_token(model, embeddings, document):
     }
     return jwt.encode(payload, SECRET_KEY, algorithm='HS256')
 
+
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         token = request.headers.get('Authorization')
+        print("Token:", token)
         if not token:
             return jsonify({'message': 'Token is missing'}), 401
         try:
             data = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+            print("data",data)
             session_id = data['session_id']
             if session_id not in chat_sessions:
                 return jsonify({'message': 'Invalid session'}), 401
@@ -87,7 +129,66 @@ def make_request(query, embeddings, documents_list,url):
             'query': query,
             'answer': f"An error occurred: {str(e)}"
         }      
-           
+        
+        
+@app.route('/get_temp_api_key', methods=['POST'])
+def get_temp_api_key():
+    master_key = request.headers.get('X-Master-API-Key')
+    if master_key != MASTER_API_KEY:
+        return jsonify({'message': 'Invalid master API key'}), 401
+    
+    data = request.json
+    model = data.get('model')
+    embeddings = data.get('embeddings')
+    document = data.get('document')
+
+    if not all([model, embeddings, document]):
+        return jsonify({'error': 'Missing required fields (model, embeddings, document)'}), 400
+    
+    temp_key = generate_temp_api_key(model, embeddings, document)
+    return jsonify({'temp_api_key': temp_key}), 200
+
+@app.route('/api/start_chat', methods=['POST'])
+@api_key_required
+def api_initiate_chat():
+    api_key = request.headers.get('X-API-Key')
+    
+    if api_key == MASTER_API_KEY:
+        return jsonify({'error': 'Master API key cannot be used to start a chat. Please use a temporary API key.'}), 400
+    
+    if api_key not in temp_api_keys:
+        return jsonify({'error': 'Invalid API key'}), 401
+    
+    key_data = temp_api_keys[api_key]
+    model = key_data['model']
+    embeddings = key_data['embeddings']
+    document = key_data['document']
+
+    jwt_token = generate_jwt_token(model, embeddings, document)
+
+    return jsonify({
+        'jwt_token': jwt_token,
+        'url': CHAT_URL
+    }), 200
+    
+@app.route('/api/chat', methods=['POST'])
+@token_required
+def api_chat(session_id):
+    result = None
+    if request.method == 'POST':
+        data = request.json
+        query = data.get('query', '')
+        url = data.get('url', '')
+        session_data = chat_sessions[session_id]
+        
+        model = session_data['model']
+        embeddings = session_data['embeddings']
+        document = session_data['document']
+        
+        result = make_request(query, embeddings, document, url)
+    
+    return jsonify(result)
+
 
 @app.route('/make_embedding', methods=['POST'])
 def make_embedding():
