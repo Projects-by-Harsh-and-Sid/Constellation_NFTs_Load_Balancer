@@ -186,7 +186,8 @@ def api_chat(session_id):
         document = session_data['document']
         
         result = make_request(query, embeddings, document, url)
-    
+
+        
     return jsonify(result)
 
 
@@ -281,7 +282,7 @@ def chat(session_id):
         # document_list = covert_list_to_dic(document)
         # print(document_list)
         result = make_request(query,embeddings,document,url)
-    
+        # print("Result:", result)
     return jsonify(result)
 
 
