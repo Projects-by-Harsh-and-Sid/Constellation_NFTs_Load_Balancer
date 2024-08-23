@@ -208,18 +208,29 @@ def make_embedding():
     
     print("Files:", files)
     with tempfile.TemporaryDirectory() as tmpdirname:
-        for file in files:
+        saved_files = []
+        for i, file in enumerate(files):
             if file and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                filepath = os.path.join(tmpdirname, filename)
+                original_filename = secure_filename(file.filename)
+                filename, extension = os.path.splitext(original_filename)
+                unique_filename = f"{filename}_{i}{extension}"
+                filepath = os.path.join(tmpdirname, unique_filename)
                 file.save(filepath)
+                print(f"Saved file: {filepath}")
+                saved_files.append(unique_filename)
             else:
                 return jsonify({'error': f'File type not allowed: {file.filename}'}), 400
+        
+        # List all files in the temporary directory
+        print("Files in temporary directory:", os.listdir(tmpdirname))
         
         # Generate embeddings and documents for all files in the directory
         embeddings = get_embeddings(tmpdirname)
         document_list = get_documents(tmpdirname)
         # print("Embeddings:", embeddings)
+        
+        print("Document List:", len(document_list))
+        print("Embeddings:", len(embeddings))
         result = {
             'message': f'{len(files)} files processed successfully',
             'embeddings': embeddings,
