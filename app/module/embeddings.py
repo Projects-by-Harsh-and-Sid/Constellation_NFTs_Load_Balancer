@@ -4,25 +4,51 @@ from llama_index.embeddings.langchain import LangchainEmbedding
 from langchain.embeddings import HuggingFaceEmbeddings
 from llama_index.llms.ollama import Ollama
 
-def get_embeddings(directory):
-    documents = SimpleDirectoryReader(directory).load_data()
+# def get_embeddings(directory):
+#     documents = SimpleDirectoryReader(directory).load_data()
+#     embed_model = LangchainEmbedding(HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2"))
+#     texts = [doc.text for doc in documents]
+#     embeddings = embed_model.get_text_embedding_batch(texts)
+#     embeddings_array = np.array(embeddings)
+#     return embeddings
+
+
+def get_embeddings(text_data):
+    # documents = SimpleDirectoryReader(directory).load_data()
     embed_model = LangchainEmbedding(HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2"))
-    texts = [doc.text for doc in documents]
-    embeddings = embed_model.get_text_embedding_batch(texts)
+    # texts = [doc.text for doc in documents]
+    embeddings = embed_model.get_text_embedding_batch(text_data)
     embeddings_array = np.array(embeddings)
     return embeddings
 
-def document_to_dict(doc):
-    if isinstance(doc, Document):
+
+# def document_to_dict(doc):
+#     if isinstance(doc, Document):
+#         return {
+#             'id': doc.doc_id,  # Use doc_id instead of id_
+#             'text': doc.text,
+#             # You can include other attributes here as neede
+#         }
+#     return doc  # Return as-is if it's not a Document object
+
+# def get_documents(directory):
+#     documents = SimpleDirectoryReader(directory).load_data()
+#     documents_list = [document_to_dict(doc) for doc in documents]
+#     return documents_list
+
+
+def document_to_dict(text_data_str):
+    
         return {
-            'id': doc.doc_id,  # Use doc_id instead of id_
-            'text': doc.text,
+            'id': str(hash(text_data_str)),  # Use doc_id instead of id_
+            'text': text_data_str,
             # You can include other attributes here as neede
         }
-    return doc  # Return as-is if it's not a Document object
 
-def get_documents(directory):
-    documents = SimpleDirectoryReader(directory).load_data()
-    documents_list = [document_to_dict(doc) for doc in documents]
+
+def get_documents(text_data):
+    # documents = SimpleDirectoryReader(directory).load_data()
+    documents_list = [document_to_dict(doc) for doc in text_data]
+    # documents_list = text_data
     return documents_list
 

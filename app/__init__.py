@@ -27,6 +27,11 @@ app.config['CHAT_SESSIONS'] = {}
 app.config['TEMP_FILE_PATH'] = temp_file_path
 
 
+app.config["Load_balancer_Endpoints"] = {
+    "hpcEndpoint": "http://localhost",
+    "hpcEndpointPort": "5500",
+}
+
 
 from app import routes
 
