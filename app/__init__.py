@@ -14,6 +14,7 @@ SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'chatwithme')
 CHAT_URL = os.environ.get('CHAT_URL', 'http://localhost:8000/query')
 MASTER_API_KEY = os.environ.get('MASTER_API_KEY', '1234567890')
 
+temp_file_path = os.path.join(os.path.dirname(__file__), 'temp')
 
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -23,7 +24,7 @@ app.config['MASTER_API_KEY'] = MASTER_API_KEY
 app.config['ALLOWED_EXTENSIONS'] = ALLOWED_EXTENSIONS
 app.config['API_KEYS'] = {}
 app.config['CHAT_SESSIONS'] = {}
-
+app.config['TEMP_FILE_PATH'] = temp_file_path
 
 
 

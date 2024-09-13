@@ -22,8 +22,7 @@ UPLOAD_FOLDER = app.config['UPLOAD_FOLDER']
 #  to be replace by reddis or on chain session management storage
 api_keys            = app.config['API_KEYS'] 
 chat_sessions       = app.config['CHAT_SESSIONS']
-
-
+temp_folder         = app.config['TEMP_FILE_PATH']
 
 
 ########################## converting PDF to text ##########################
@@ -113,7 +112,18 @@ def generate_key():
 
     content += "\n"  # Add a newline before the main AI_Data content
 
-    with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.txt') as temp_file:
+    
+    # check of temp folder exists
+    if not os.path.exists(temp_folder):
+        os.makedirs(temp_folder)
+    
+    # Create a random temporary file to store the content
+    file_name = str(os.urandom(24).hex()) + '.txt'
+    temp_file_path = os.path.join(temp_folder, file_name)
+
+    
+    
+    with  open(temp_file_path, 'w+') as temp_file:
         temp_file.write(content)
         temp_file_path = temp_file.name
 
