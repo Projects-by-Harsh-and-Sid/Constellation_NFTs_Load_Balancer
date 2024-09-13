@@ -1,9 +1,9 @@
 from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
 import tempfile
-from embeddings import get_embeddings
+from app.module.embeddings import get_embeddings
 import os
-from embeddings import get_documents
+from app.module.embeddings import get_documents
 from flask_cors import CORS
 import requests
 import jwt

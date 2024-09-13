@@ -1,7 +1,7 @@
 from flask import Flask, request, render_template
 import requests
-from embeddings import get_embeddings
-from embeddings import get_documents
+from app.module.embeddings import get_embeddings
+from app.module.embeddings import get_documents
 from llama_index.core import SimpleDirectoryReader,Document
 import json
 
